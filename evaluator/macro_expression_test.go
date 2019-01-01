@@ -3,10 +3,10 @@ package evaluator
 import (
 	"testing"
 
-	"bitbucket.org/kandayasu/squirrel-go/ast"
-	"bitbucket.org/kandayasu/squirrel-go/lexer"
-	"bitbucket.org/kandayasu/squirrel-go/object"
-	"bitbucket.org/kandayasu/squirrel-go/parser"
+	"github.com/CHIKUWAODEN/monkey-for-c95/ast"
+	"github.com/CHIKUWAODEN/monkey-for-c95/lexer"
+	"github.com/CHIKUWAODEN/monkey-for-c95/object"
+	"github.com/CHIKUWAODEN/monkey-for-c95/parser"
 )
 
 func TestDefineMacro(t *testing.T) {

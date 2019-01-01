@@ -1,8 +1,8 @@
 package evaluator
 
 import (
-	"bitbucket.org/kandayasu/squirrel-go/ast"
-	"bitbucket.org/kandayasu/squirrel-go/object"
+	"github.com/CHIKUWAODEN/monkey-for-c95/ast"
+	"github.com/CHIKUWAODEN/monkey-for-c95/object"
 )
 
 // - マクロの定義を探索

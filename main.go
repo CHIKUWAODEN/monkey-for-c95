@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/user"
 
-	"bitbucket.org/kandayasu/squirrel-go/repl"
+	"github.com/CHIKUWAODEN/monkey-for-c95/repl"
 )
 
 func main() {

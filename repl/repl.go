@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 
-	"bitbucket.org/kandayasu/squirrel-go/object"
+	"github.com/CHIKUWAODEN/monkey-for-c95/object"
 
-	"bitbucket.org/kandayasu/squirrel-go/evaluator"
-	"bitbucket.org/kandayasu/squirrel-go/lexer"
-	"bitbucket.org/kandayasu/squirrel-go/parser"
+	"github.com/CHIKUWAODEN/monkey-for-c95/evaluator"
+	"github.com/CHIKUWAODEN/monkey-for-c95/lexer"
+	"github.com/CHIKUWAODEN/monkey-for-c95/parser"
 )
 
 // PROMPT : prompt character

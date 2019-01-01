@@ -6,7 +6,7 @@ import (
 	"hash/fnv"
 	"strings"
 
-	"bitbucket.org/kandayasu/squirrel-go/ast"
+	"github.com/CHIKUWAODEN/monkey-for-c95/ast"
 )
 
 type ObjectType string

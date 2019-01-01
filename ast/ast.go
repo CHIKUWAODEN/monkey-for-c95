@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"bitbucket.org/kandayasu/squirrel-go/token"
+	"github.com/CHIKUWAODEN/monkey-for-c95/token"
 )
 
 // Node :

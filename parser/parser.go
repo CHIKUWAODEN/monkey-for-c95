@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"bitbucket.org/kandayasu/squirrel-go/ast"
-	"bitbucket.org/kandayasu/squirrel-go/lexer"
-	"bitbucket.org/kandayasu/squirrel-go/token"
+	"github.com/CHIKUWAODEN/monkey-for-c95/ast"
+	"github.com/CHIKUWAODEN/monkey-for-c95/lexer"
+	"github.com/CHIKUWAODEN/monkey-for-c95/token"
 )
 
 const (

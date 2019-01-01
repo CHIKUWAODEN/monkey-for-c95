@@ -3,7 +3,7 @@ package evaluator
 import (
 	"testing"
 
-	"bitbucket.org/kandayasu/squirrel-go/object"
+	"github.com/CHIKUWAODEN/monkey-for-c95/object"
 )
 
 func TestQuote(t *testing.T) {

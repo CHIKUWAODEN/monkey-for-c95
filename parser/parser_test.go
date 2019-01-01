@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"bitbucket.org/kandayasu/squirrel-go/ast"
-	"bitbucket.org/kandayasu/squirrel-go/lexer"
+	"github.com/CHIKUWAODEN/monkey-for-c95/ast"
+	"github.com/CHIKUWAODEN/monkey-for-c95/lexer"
 )
 
 func TestLetStatements(t *testing.T) {

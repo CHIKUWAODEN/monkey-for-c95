@@ -3,7 +3,7 @@ package evaluator
 import (
 	"fmt"
 
-	"bitbucket.org/kandayasu/squirrel-go/object"
+	"github.com/CHIKUWAODEN/monkey-for-c95/object"
 )
 
 var builtins = map[string]*object.Builtin{

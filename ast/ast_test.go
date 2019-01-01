@@ -3,7 +3,7 @@ package ast
 import (
 	"testing"
 
-	"bitbucket.org/kandayasu/squirrel-go/token"
+	"github.com/CHIKUWAODEN/monkey-for-c95/token"
 )
 
 func TestString(t *testing.T) {

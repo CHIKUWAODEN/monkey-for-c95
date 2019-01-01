@@ -3,8 +3,8 @@ package evaluator
 import (
 	"fmt"
 
-	"bitbucket.org/kandayasu/squirrel-go/ast"
-	"bitbucket.org/kandayasu/squirrel-go/object"
+	"github.com/CHIKUWAODEN/monkey-for-c95/ast"
+	"github.com/CHIKUWAODEN/monkey-for-c95/object"
 )
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
