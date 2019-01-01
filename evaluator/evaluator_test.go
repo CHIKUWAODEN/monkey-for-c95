@@ -242,6 +242,83 @@ func TestFunctionObject(t *testing.T) {
 	}
 }
 
+func TestClassObject(t *testing.T) {
+	input := "class Foo {};"
+
+	evaluated := testEval(input)
+	class, ok := evaluated.(*object.Class)
+	if !ok {
+		t.Fatalf("object is not Class. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	expectBody := ""
+	if class.Body.String() != expectBody {
+		t.Fatalf("body is not %q. got=%q", expectBody, class.Body.String())
+	}
+}
+
+func TestClassNew(t *testing.T) {
+	input := "class Foo {}; let foo = Foo(); foo;"
+
+	evaluated := testEval(input)
+	_, ok := evaluated.(*object.Instance)
+	if !ok {
+		t.Fatalf("object is not Instance. got=%T (%+v)", evaluated, evaluated)
+	}
+}
+
+func TestClassConstructor(t *testing.T) {
+	input := `
+class Foo
+{
+	let myName = "bar";
+	let constructor = fn(name) {
+		this.myName = name;
+	};
+};
+
+let foo = Foo("Jhon doe");
+foo.myName;
+`
+	evaluated := testEval(input)
+	// str, ok := evaluated.(*object.Reference)
+	ref, ok := evaluated.(*object.Reference)
+	if !ok {
+		t.Fatalf("object is not object.Reference. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	str, ok := ref.Value().(*object.String)
+	if !ok {
+		t.Fatalf("str is not object.String. got=%T, (%+v)", ref.Value(), ref.Value())
+	}
+
+	expectedValue := "Jhon doe"
+	if str.Value != expectedValue {
+		t.Fatalf("str.Value is not '%s', got '%s'", expectedValue, str.Value)
+	}
+}
+
+func TestAssignment(t *testing.T) {
+
+	input := `
+let a = 0;
+a = 1;
+a;
+`
+	evaluated := testEval(input)
+	integer, ok := evaluated.(*object.Integer)
+	if !ok {
+		t.Fatalf("ref.Value() is not Integer. got=%T (%+v)",
+			integer, integer)
+	}
+
+	var expectedValue int64 = 1
+	if integer.Value != expectedValue {
+		t.Fatalf("integer.Value is not %d, got %d",
+			expectedValue, integer.Value)
+	}
+}
+
 func TestFunctionApplication(t *testing.T) {
 	tests := []struct {
 		input    string

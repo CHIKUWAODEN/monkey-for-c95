@@ -1,6 +1,8 @@
 package lexer
 
-import "bitbucket.org/kandayasu/squirrel-go/token"
+import (
+	"bitbucket.org/kandayasu/squirrel-go/token"
+)
 
 // Lexer : lexing input source
 type Lexer struct {
@@ -101,6 +103,8 @@ func (l *Lexer) NextToken() token.Token {
 	case '"':
 		tok.Type = token.STRING
 		tok.Literal = l.readString()
+	case '.':
+		tok = newToken(token.DOT, l.ch)
 
 	case 0:
 		tok.Literal = ""

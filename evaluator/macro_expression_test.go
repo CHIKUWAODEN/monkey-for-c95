@@ -72,9 +72,9 @@ func TestExpandMacros(t *testing.T) {
 	}{
 		{
 			`let infixExpression = macro() { quote(1 + 2); };
-			
-			infixExpression();
-			`,
+
+				infixExpression();
+				`,
 			`(1 + 2)`,
 		},
 		{
@@ -87,16 +87,16 @@ func TestExpandMacros(t *testing.T) {
 		},
 		{
 			`
-			let unless = macro(condition, consequence, alternative) {
-				quote(if ((!unquote(condition))) {
-					unquote(consequence);
-				} else {
-					unquote(alternative);
-				});
-			};
-			
-			unless(10 > 5, puts("not greater"), puts("greater"));
-			`,
+				let unless = macro(condition, consequence, alternative) {
+					quote(if ((!unquote(condition))) {
+						unquote(consequence);
+					} else {
+						unquote(alternative);
+					});
+				};
+
+				unless(10 > 5, puts("not greater"), puts("greater"));
+				`,
 			`if (!(10 > 5)) { puts("not greater") } else { puts("greater"); }`,
 		},
 	}

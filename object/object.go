@@ -13,6 +13,9 @@ type ObjectType string
 
 const (
 	FUNCTION_OBJ     = "FUNCTION"
+	CLASS_OBJ        = "CLASS"
+	INSTANCE_OBJ     = "INSTANCE"
+	THIS_OBJ         = "THIS"
 	INTEGER_OBJ      = "INTEGER"
 	STRING_OBJ       = "STRING"
 	BOOLEAN_OBJ      = "BOOLEAN"
@@ -23,6 +26,7 @@ const (
 	ARRAY_OBJ        = "ARRAY"
 	HASH_OBJ         = "HASH"
 	QUOTE_OBJ        = "QUOTE"
+	REFERENCE_OBJ    = "REFERENCE"
 	MACRO_OBJ        = "MACRO"
 )
 
@@ -110,6 +114,83 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n}")
 
 	return out.String()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type Class struct {
+	Name *ast.Identifier
+	Body *ast.BlockStatement
+}
+
+func (c *Class) Type() ObjectType { return CLASS_OBJ }
+func (c *Class) Inspect() string {
+	var out bytes.Buffer
+
+	out.WriteString("class")
+	out.WriteString(c.Name.String())
+	out.WriteString("{")
+	out.WriteString(c.Body.String())
+	out.WriteString("}")
+
+	return out.String()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type Instance struct {
+	Class *Class
+	This  *Environment
+}
+
+func (i *Instance) Type() ObjectType { return INSTANCE_OBJ }
+func (i *Instance) Inspect() string {
+	var out bytes.Buffer
+
+	out.WriteString("instanfe of ")
+	out.WriteString(i.Class.Name.String())
+
+	return out.String()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type This struct {
+	Instance *Instance
+	Name     string
+}
+
+func (t *This) Type() ObjectType { return THIS_OBJ }
+func (t *This) Inspect() string {
+	return "this is " + t.Instance.Inspect()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type Reference struct {
+	Env  *Environment
+	Name string
+}
+
+func (r *Reference) Type() ObjectType { return REFERENCE_OBJ }
+func (r *Reference) Inspect() string {
+	obj, ok := r.Env.Get(r.Name)
+	if ok {
+		return obj.Inspect()
+	}
+	return "<missing reference>"
+}
+
+func (r *Reference) Assign(obj Object) Object {
+	return r.Env.Set(r.Name, obj)
+}
+
+func (r *Reference) Value() Object {
+	obj, ok := r.Env.Get(r.Name)
+	if ok {
+		return obj
+	}
+	return &Null{}
 }
 
 /*---------------------------------------------------------------------------*/

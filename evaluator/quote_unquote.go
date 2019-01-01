@@ -62,9 +62,15 @@ func convertObjectToASTNode(obj object.Object) ast.Node {
 		}
 		return &ast.Boolean{Token: t, Value: obj.Value}
 
+	// Reference が来た場合は Value() の値でフォールバックしてやればよい
+	// Reference が指示するものが Integer や Boolean である場合、これまでどおり振る舞う
+	case *object.Reference:
+		return convertObjectToASTNode(obj.Value())
+
 	case *object.Quote:
 		return obj.Node
 
+	// 処理できないオブジェクト、たとえば現状だと String などはここに来るようになっている
 	default:
 		return nil
 	}

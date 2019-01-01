@@ -12,6 +12,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN      // =
 	EQUALS      // ==
 	LESSGREATER // >, <
 	SUM         // +, -
@@ -19,9 +20,11 @@ const (
 	PREFIX      // -x, !x
 	CALL        // myFunction(x)
 	INDEX       // array[index]
+	DOT         // foo.name
 )
 
 var precedences = map[token.TokenType]int{
+	token.ASSIGN:   ASSIGN,
 	token.EQ:       EQUALS,
 	token.NOTEQ:    EQUALS,
 	token.LT:       LESSGREATER,
@@ -32,6 +35,7 @@ var precedences = map[token.TokenType]int{
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
 	token.LBRACKET: INDEX,
+	token.DOT:      DOT,
 }
 
 type Parser struct {
@@ -61,6 +65,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.THIS, p.parseThis)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
@@ -69,6 +74,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefix(token.CLASS, p.parseClassLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
@@ -85,6 +91,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
+	p.registerInfix(token.DOT, p.parseDotExpression)
+	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
 
 	// 二つのトークンを読み込むことで、curToken および peekToken の両方がセットされる
 	p.nextToken()
@@ -153,10 +161,18 @@ func (p *Parser) parseStatement() ast.Statement {
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
+
+	ref := p.peekToken.Type == token.ASSIGN
+
 	return &ast.Identifier{
-		Token: p.curToken,
-		Value: p.curToken.Literal,
+		Token:     p.curToken,
+		Reference: ref,
+		Value:     p.curToken.Literal,
 	}
+}
+
+func (p *Parser) parseThis() ast.Expression {
+	return p.parseIdentifier()
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -388,11 +404,40 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	precedence := p.curPrecendence()
 	p.nextToken()
 
-	// if expression.Operator == "+" {
-	// 	expression.Right = p.parseExpression(precedence - 1)
-	// } else {
-	// 	expression.Right = p.parseExpression(precedence)
-	// }
+	expression.Right = p.parseExpression(precedence)
+
+	return expression
+}
+
+func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
+	defer untrace(trace("parseDotExpression"))
+
+	expression := &ast.DotExpression{
+		Token: p.curToken,
+		Left:  left,
+	}
+
+	//	precedence := p.curPrecendence()
+	p.nextToken()
+
+	expression.Right = &ast.Identifier{
+		Token: p.curToken,
+		Value: p.curToken.Literal,
+	}
+
+	return expression
+}
+
+func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
+	defer untrace(trace("parseAssignmentExpression"))
+
+	expression := &ast.AssignmentExpression{
+		Token: p.curToken,
+		Left:  left,
+	}
+
+	precedence := p.curPrecendence()
+	p.nextToken()
 
 	expression.Right = p.parseExpression(precedence)
 
@@ -417,6 +462,27 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	}
 
 	lit.Parameters = p.parseFunctionParameters()
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	lit.Body = p.parseBlockStatement()
+
+	return lit
+}
+
+func (p *Parser) parseClassLiteral() ast.Expression {
+	lit := &ast.ClassLiteral{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	lit.Name = &ast.Identifier{
+		Token: p.curToken,
+		Value: p.curToken.Literal,
+	}
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil

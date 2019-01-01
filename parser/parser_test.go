@@ -408,6 +408,45 @@ func TestOperatorPrecedeceParsing(t *testing.T) {
 	}
 }
 
+func TestAssingmentOperatorExpressionParsing(t *testing.T) {
+
+	input := `foo = 100`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+			1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.AssignmentExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.AsignmentExpression. got=%T",
+			stmt.Expression)
+	}
+
+	expectedIdentifier := "foo"
+	if exp.Left.String() != expectedIdentifier {
+		t.Fatalf("exp.Left.String() is not '%s', got='%s'",
+			expectedIdentifier, exp.Left.String())
+	}
+
+	expectedExpression := "100"
+	if exp.Right.String() != expectedExpression {
+		t.Fatalf("exp.Right.String() is not '%s', got='%s'",
+			expectedIdentifier, exp.Right.String())
+	}
+}
+
 func TestIfStatement(t *testing.T) {
 	input := `if (x < y) { x }`
 
@@ -853,6 +892,133 @@ func TestMacroLiteralParsing(t *testing.T) {
 	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
 }
 
+func TestClassLiteralParsing(t *testing.T) {
+	input := `
+	class Foo {}
+	`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements nodes not contain %d statements. got=%d",
+			1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement")
+	}
+
+	class, ok := stmt.Expression.(*ast.ClassLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.ClassLiteral. got %T",
+			stmt.Expression)
+	}
+
+	if len(class.Body.Statements) != 0 {
+		t.Fatalf("class.Body.Statements has not 0 statements. got=%d\n",
+			len(class.Body.Statements))
+	}
+}
+
+func TestDotExpressionParsing(t *testing.T) {
+
+	tests := []struct {
+		input         string
+		expectedLeft  string
+		expectedRight string
+	}{
+		{"foo.bar", "foo", "bar"},
+		{"this.bar", "this", "bar"},
+	}
+
+	for _, tt := range tests {
+
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements nodes not contain %d statements. got=%d",
+				1, len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+				program.Statements[0])
+		}
+
+		//
+		testDotExpression(
+			t, stmt.Expression, tt.expectedLeft, tt.expectedRight,
+		)
+	}
+}
+
+func TestParsingAssingmentExpression(t *testing.T) {
+
+	input := "a = 2;"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got =%d\n",
+			1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("exp is not ast.ExpressionStatement. got=%T", stmt.Expression)
+	}
+
+	exp, ok := stmt.Expression.(*ast.AssignmentExpression)
+	if !ok {
+		t.Fatalf("exp is not ast.AssignmentExpression. got=%T", stmt.Expression)
+	}
+
+	testIdentifier(t, exp.Left, "a")
+
+	testLiteralExpression(t, exp.Right, 2)
+}
+
+func TestParsingAssingmentExpressionDot(t *testing.T) {
+	input := "this.a = 2;"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got =%d\n",
+			1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("exp is not ast.ExpressionStatement. got=%T", stmt.Expression)
+	}
+
+	exp, ok := stmt.Expression.(*ast.AssignmentExpression)
+	if !ok {
+		t.Fatalf("exp is not ast.AssignmentExpression. got=%T", stmt.Expression)
+	}
+
+	// ドット式のパース結果をテスト
+	testDotExpression(t, exp.Left, "this", "a")
+
+	// 代入演算子のオペランドをチェック
+	testLiteralExpression(t, exp.Right, 2)
+}
+
 /*---------------------------------------------------------------------------*/
 
 func checkParserErrors(t *testing.T, p *Parser) {
@@ -931,6 +1097,29 @@ func testIdentifier(t *testing.T, exp ast.Expression, value string) bool {
 			ident.TokenLiteral())
 		return false
 	}
+	return true
+}
+
+func testDotExpression(t *testing.T, exp ast.Expression, leftValue, rightValue string) bool {
+
+	dot, ok := exp.(*ast.DotExpression)
+	if !ok {
+		t.Errorf("exp not *ast.DotExpression. got=%T", exp)
+		return false
+	}
+
+	if dot.Left.TokenLiteral() != leftValue {
+		t.Errorf("dot.Left.TokenLiteral() not %s. got=%s",
+			leftValue, dot.Left.TokenLiteral())
+		return false
+	}
+
+	if dot.Right.TokenLiteral() != rightValue {
+		t.Errorf("dot.Right.TokenLiteral() not %s. got=%s",
+			rightValue, dot.Right.TokenLiteral())
+		return false
+	}
+
 	return true
 }
 

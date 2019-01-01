@@ -54,6 +54,10 @@ const (
 	ELSE     = "ELSE"
 	RETURN   = "RETURN"
 
+	CLASS = "CLASS"
+	THIS  = "THIS"
+	DOT   = "."
+
 	// macro
 	MACRO = "MACRO"
 )
@@ -67,6 +71,8 @@ var keywords = map[string]TokenType{
 	"else":   ELSE,
 	"return": RETURN,
 	"macro":  MACRO,
+	"class":  CLASS,
+	"this":   THIS,
 }
 
 // LookupIdent : check ident is keyword or identifier

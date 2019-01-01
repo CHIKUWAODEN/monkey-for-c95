@@ -54,12 +54,45 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return evalInfixExpression(node.Operator, left, right)
 
+	case *ast.AssignmentExpression:
+		// Expression
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+
+		// Expression
+		right := Eval(node.Right, env)
+		if isError(right) {
+			return right
+		}
+
+		ref, ok := left.(*object.Reference)
+		if !ok {
+			newError("Assingment error, got expected reference")
+		}
+		ref.Assign(right)
+
+	case *ast.DotExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+		return evalDotInfixExpression(left, node.Right)
+
 	case *ast.CallExpression:
 		// 関数呼び出しとして評価するより前に quote として評価
 		if node.Function.TokenLiteral() == "quote" {
 			return quote(node.Arguments[0], env)
 		}
 
+		// __note__
+		//
+		// env.Get は outer をたどっていくため、関数の外で束縛された変数なども見えてしまう
+		// >> let a = 10;
+		// >> let hoge = fn() { puts(a); }
+		// >> hoge();
+		// 10
 		function := Eval(node.Function, env)
 		if isError(function) {
 			return function
@@ -85,6 +118,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
 
+	case *ast.This:
+		return evalThis(node, env)
+
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 
@@ -95,6 +131,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		params := node.Parameters
 		body := node.Body
 		return &object.Function{Parameters: params, Env: env, Body: body}
+
+	case *ast.ClassLiteral:
+		// Body 部分は Function と同様に applyFunction のときに評価する
+		classObj := &object.Class{
+			Name: node.Name,
+			Body: node.Body,
+		}
+		// object.Class を Env に登録しておく（これがコンストラクタとして評価される）
+		env.Set(node.Name.Value, classObj)
+		return classObj
 
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(node.Elements, env)
@@ -120,6 +166,31 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		extendedEnv := extendedFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
+
+	case *object.Class:
+		// コンストラクタの呼び出しとして評価し、object.Instance を生成する
+		instance := &object.Instance{
+			Class: fn,
+			This:  object.NewEnvironment(),
+		}
+
+		// this を暗黙的にインスタンスの環境に束縛しておく
+		instance.This.Set("this", instance)
+
+		// 横着して Eval を使って、Body を評価する（ちなみに、現状だとこの BlockStatement の中に return が書けてしまう）
+		// ここで評価された BlockStatement の内容は This という環境の中で処理される
+		Eval(fn.Body, instance.This)
+
+		// もしコンストラクタを持っているならこの時点でこの appylyFunction を使って関数として評価してやる
+		ctor, ok := instance.This.Get("constructor")
+		if ok {
+			fn, ok := ctor.(*object.Function)
+			if ok {
+				extendedEnv := extendedFunctionEnv(fn, args)
+				Eval(fn.Body, extendedEnv)
+			}
+		}
+		return instance
 
 	case *object.Builtin:
 		return fn.Fn(args...)
@@ -155,6 +226,12 @@ func evalIdentifier(
 ) object.Object {
 	val, ok := env.Get(node.Value)
 	if ok {
+		if node.Reference {
+			return &object.Reference{
+				Env:  env,
+				Name: node.Value,
+			}
+		}
 		return val
 	}
 
@@ -328,6 +405,42 @@ func evalStringInfixExpression(
 	leftVal := left.(*object.String).Value
 	rightVal := right.(*object.String).Value
 	return &object.String{Value: leftVal + rightVal}
+}
+
+func evalDotInfixExpression(
+	left object.Object,
+	right *ast.Identifier,
+) object.Object {
+
+	inst, ok := left.(*object.Instance)
+	if !ok {
+		return newError("unexpecte left value type")
+	}
+
+	_, ok = inst.This.Get(right.Value)
+	if !ok {
+		return newError("undefined member : %s", right.Value)
+	}
+	return &object.Reference{
+		Env:  inst.This,
+		Name: right.Value,
+	}
+}
+
+func evalThis(node *ast.This, env *object.Environment) object.Object {
+
+	this, ok := env.Get("this")
+	if !ok {
+		return newError("'this' not found")
+	}
+
+	// インスタンス生成時に予め this をインスタンスの Environment に Set してある
+	instance, ok := this.(*object.Instance)
+	if !ok {
+		return newError("'this' is not instance")
+	}
+
+	return instance
 }
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {

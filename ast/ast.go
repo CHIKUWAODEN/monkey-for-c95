@@ -133,8 +133,9 @@ func (es *ExpressionStatement) String() string {
 
 // Identifier :
 type Identifier struct {
-	Token token.Token // token.IDENT
-	Value string
+	Token     token.Token // token.IDENT
+	Reference bool
+	Value     string
 }
 
 func (i *Identifier) expressionNode() {}
@@ -421,6 +422,79 @@ func (hl *HashLiteral) String() string {
 	out.WriteString("{")
 	out.WriteString(strings.Join(pairs, ", "))
 	out.WriteString("}")
+
+	return out.String()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type ClassLiteral struct {
+	Token token.Token
+	Body  *BlockStatement
+	Name  *Identifier
+}
+
+func (cl *ClassLiteral) expressionNode()      {}
+func (cl *ClassLiteral) TokenLiteral() string { return cl.Token.Literal }
+func (cl *ClassLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(cl.TokenLiteral())
+	out.WriteString(cl.Body.String())
+
+	return out.String()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type DotExpression struct {
+	Token token.Token
+	Left  Expression
+	Right *Identifier
+}
+
+func (de *DotExpression) expressionNode()      {}
+func (de *DotExpression) TokenLiteral() string { return de.Token.Literal }
+func (de *DotExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(de.Left.String())
+	out.WriteString(".")
+	out.WriteString(de.Right.String())
+
+	return out.String()
+}
+
+/*---------------------------------------------------------------------------*/
+
+type This struct {
+	Token token.Token // token.THIS
+	Value string
+}
+
+func (t *This) expressionNode()      {}
+func (t *This) TokenLiteral() string { return t.Token.Literal }
+func (t *This) String() string       { return t.Value }
+
+/*---------------------------------------------------------------------------*/
+
+type AssignmentExpression struct {
+	Token token.Token
+	Left  Expression // 左辺がドット演算子を含む式になっているかもしれないため、Expression を使う
+	Right Expression // Expression
+}
+
+func (ae *AssignmentExpression) expressionNode()      {}
+func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AssignmentExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ae.Left.String())
+	out.WriteString("=")
+	out.WriteString(ae.Right.String())
+	out.WriteString(")")
 
 	return out.String()
 }
